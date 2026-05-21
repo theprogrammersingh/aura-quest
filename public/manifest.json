@@ -1,0 +1,40 @@
+{
+  "name": "AuraQuest",
+  "short_name": "AuraQuest",
+  "description": "Gamified AI Journal & Mood Tracker",
+  "theme_color": "#0b0c16",
+  "background_color": "#0b0c16",
+  "display": "standalone",
+  "orientation": "portrait",
+  "start_url": "/",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "New Entry",
+      "short_name": "New Entry",
+      "description": "Write a new journal entry",
+      "url": "/new-entry",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Insights",
+      "short_name": "Insights",
+      "description": "View AI Mood Insights",
+      "url": "/insights",
+      "icons": [{ "src": "/favicon.svg", "sizes": "any" }]
+    }
+  ]
+}

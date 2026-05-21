@@ -1,0 +1,335 @@
+/* AuraQuest Glassmorphic Celestial Design System */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+
+:root {
+  /* Celestial Theme Base Colors */
+  --space-dark: #07070f;
+  --space-deep: #0b0c16;
+  --space-card: rgba(15, 17, 34, 0.55);
+  --space-card-hover: rgba(22, 25, 49, 0.7);
+  --space-border: rgba(255, 255, 255, 0.08);
+  --space-border-hover: rgba(255, 255, 255, 0.16);
+  --text-primary: #f1f3fa;
+  --text-secondary: #a0a6c0;
+  --text-muted: #646a8a;
+  
+  /* Celestial Mood Glows */
+  --glow-purple: #8a2be2;
+  --glow-cyan: #00ffff;
+  --glow-pink: #ff007f;
+  --glow-gold: #ffaa00;
+  --glow-green: #00ff66;
+  --glow-blue: #0088ff;
+  
+  /* Moods RGB */
+  --mood-joy: 255, 170, 0;        /* Gold */
+  --mood-peace: 0, 255, 102;      /* Green */
+  --mood-sadness: 0, 136, 255;    /* Blue */
+  --mood-fear: 138, 43, 226;      /* Purple */
+  --mood-anger: 255, 0, 127;      /* Pink/Red */
+  
+  /* Fonts */
+  --font-body: 'Plus Jakarta Sans', sans-serif;
+  --font-display: 'Space Grotesk', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background-color: var(--space-dark);
+  background-image: 
+    radial-gradient(circle at 10% 20%, rgba(138, 43, 226, 0.15) 0%, transparent 40%),
+    radial-gradient(circle at 90% 80%, rgba(0, 255, 255, 0.12) 0%, transparent 45%),
+    radial-gradient(circle at 50% 50%, rgba(11, 12, 22, 1) 0%, rgba(7, 7, 15, 1) 100%);
+  background-attachment: fixed;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  min-height: 100vh;
+  overflow-x: hidden;
+  line-height: 1.6;
+}
+
+/* Beautiful Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--space-dark);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* Glassmorphism Cards */
+.glass-panel {
+  background: var(--space-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--space-border);
+  border-radius: 20px;
+  padding: 24px;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 50%, transparent 100%);
+}
+
+.glass-panel:hover {
+  border-color: var(--space-border-hover);
+  background: var(--space-card-hover);
+  box-shadow: 0 12px 40px -10px rgba(0, 0, 0, 0.5);
+  transform: translateY(-2px);
+}
+
+/* Mood-driven Dynamic Glow Borders */
+.glow-joy {
+  box-shadow: 0 0 15px -3px rgba(var(--mood-joy), 0.15);
+  border-color: rgba(var(--mood-joy), 0.25);
+}
+.glow-joy:hover {
+  border-color: rgba(var(--mood-joy), 0.5);
+  box-shadow: 0 0 25px -3px rgba(var(--mood-joy), 0.3);
+}
+
+.glow-peace {
+  box-shadow: 0 0 15px -3px rgba(var(--mood-peace), 0.15);
+  border-color: rgba(var(--mood-peace), 0.25);
+}
+.glow-peace:hover {
+  border-color: rgba(var(--mood-peace), 0.5);
+  box-shadow: 0 0 25px -3px rgba(var(--mood-peace), 0.3);
+}
+
+.glow-sadness {
+  box-shadow: 0 0 15px -3px rgba(var(--mood-sadness), 0.15);
+  border-color: rgba(var(--mood-sadness), 0.25);
+}
+.glow-sadness:hover {
+  border-color: rgba(var(--mood-sadness), 0.5);
+  box-shadow: 0 0 25px -3px rgba(var(--mood-sadness), 0.3);
+}
+
+.glow-fear {
+  box-shadow: 0 0 15px -3px rgba(var(--mood-fear), 0.15);
+  border-color: rgba(var(--mood-fear), 0.25);
+}
+.glow-fear:hover {
+  border-color: rgba(var(--mood-fear), 0.5);
+  box-shadow: 0 0 25px -3px rgba(var(--mood-fear), 0.3);
+}
+
+.glow-anger {
+  box-shadow: 0 0 15px -3px rgba(var(--mood-anger), 0.15);
+  border-color: rgba(var(--mood-anger), 0.25);
+}
+.glow-anger:hover {
+  border-color: rgba(var(--mood-anger), 0.5);
+  box-shadow: 0 0 25px -3px rgba(var(--mood-anger), 0.3);
+}
+
+/* Custom interactive components */
+.glowing-btn {
+  background: linear-gradient(135deg, var(--glow-purple), var(--glow-pink));
+  color: #fff;
+  border: none;
+  padding: 12px 28px;
+  border-radius: 12px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s ease;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 4px 15px rgba(138, 43, 226, 0.4);
+}
+
+.glowing-btn::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, var(--glow-cyan), var(--glow-purple));
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  z-index: 1;
+}
+
+.glowing-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(138, 43, 226, 0.6);
+}
+
+.glowing-btn:hover::after {
+  opacity: 1;
+}
+
+.glowing-btn:active {
+  transform: translateY(1px);
+}
+
+.glowing-btn > * {
+  position: relative;
+  z-index: 2;
+}
+
+/* Secondary Button outline style */
+.glowing-btn-secondary {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  border: 1px solid var(--space-border);
+  padding: 12px 28px;
+  border-radius: 12px;
+  font-family: var(--font-display);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.glowing-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 0 15px rgba(255, 255, 255, 0.05);
+  transform: translateY(-1px);
+}
+
+/* Inputs */
+.celestial-input {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--space-border);
+  border-radius: 12px;
+  color: var(--text-primary);
+  padding: 14px 16px;
+  font-family: var(--font-body);
+  font-size: 1rem;
+  transition: all 0.25s ease;
+  width: 100%;
+  outline: none;
+}
+
+.celestial-input:focus {
+  border-color: var(--glow-purple);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 15px rgba(138, 43, 226, 0.25);
+}
+
+/* Animations */
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+  100% { transform: translateY(0px); }
+}
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 0.9; transform: scale(1.02); }
+}
+
+@keyframes spin-slow {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+.animate-pulse-slow {
+  animation: pulse-slow 3s ease-in-out infinite;
+}
+
+.animate-spin-slow {
+  animation: spin-slow 20s linear infinite;
+}
+
+/* Tabs */
+.tabs-container {
+  display: flex;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  padding: 4px;
+  border: 1px solid var(--space-border);
+}
+
+.tab-btn {
+  flex: 1;
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  padding: 10px;
+  border-radius: 8px;
+  font-family: var(--font-display);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tab-btn.active {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Custom Grid / Layouts */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 1024px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Loader Screen Overlay */
+.loader-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(7, 7, 15, 0.95);
+  backdrop-filter: blur(20px);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+}
+
+/* Mood gauge keyframes */
+@keyframes drawCircle {
+  to {
+    stroke-dashoffset: 0;
+  }
+}

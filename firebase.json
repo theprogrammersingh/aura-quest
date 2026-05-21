@@ -1,0 +1,13 @@
+{
+  "apphosting": {
+    "backendId": "auraquest-backend",
+    "rootDir": "/",
+    "ignore": [
+      "node_modules",
+      ".git",
+      "backup-old",
+      "chrome-profile",
+      "firebase-debug.log"
+    ]
+  }
+}
