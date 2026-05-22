@@ -36,6 +36,11 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
+  // Only cache HTTP/HTTPS requests (ignores chrome-extension://, data:, etc.)
+  if (!event.request.url.startsWith('http')) {
+    return;
+  }
+
   // Ignore API requests, hot reload, and non-GET requests
   if (
     event.request.url.includes('/api/') || 

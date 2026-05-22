@@ -1,6 +1,7 @@
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import Navbar from "@/components/Navbar";
+import BottomNavbar from "@/components/BottomNavbar";
 import PWARegistry from "@/components/PWARegistry";
 import InstallPrompt from "@/components/InstallPrompt";
 
@@ -79,9 +80,10 @@ export default function RootLayout({ children }) {
         <AuthProvider>
           <PWARegistry />
           <Navbar />
-          <main style={{ padding: "0 24px 24px 24px", maxWidth: "1200px", margin: "0 auto", position: "relative", zIndex: 1 }}>
+          <main className="container-main">
             {children}
           </main>
+          <BottomNavbar />
           <InstallPrompt />
         </AuthProvider>
       </body>

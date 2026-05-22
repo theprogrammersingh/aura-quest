@@ -357,12 +357,7 @@ function InsightsContent() {
       )}
 
       {/* Core Insights Layout */}
-      <div className="insights-grid" style={{
-        display: 'grid',
-        gridTemplateColumns: '1.2fr 2fr',
-        gap: '32px',
-        alignItems: 'start'
-      }}>
+      <div className="insights-grid">
         
         {/* Left Column: Mood Score Card & Dominant Emotion */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>

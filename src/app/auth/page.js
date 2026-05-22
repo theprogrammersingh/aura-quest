@@ -78,7 +78,7 @@ export default function Auth() {
       {/* Dynamic Star particles background */}
       <ParticleCanvas density={60} />
 
-      <div className="glass-panel" style={{
+      <div className="glass-panel auth-card" style={{
         maxWidth: '460px',
         width: '100%',
         padding: '40px 32px',

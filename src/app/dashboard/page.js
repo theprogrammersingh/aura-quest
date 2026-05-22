@@ -308,7 +308,7 @@ export default function Dashboard() {
       )}
 
       {/* Welcome Banner */}
-      <div style={{
+      <div className="dashboard-welcome" style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
