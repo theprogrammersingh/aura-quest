@@ -1,0 +1,42 @@
+# AuraQuest: Gamified AI Journal & Mood Tracker
+
+AuraQuest is a gamified Progressive Web App (PWA) that leverages Google Gemini AI to analyze daily journal reflections, decode emotional states, reward positive mindfulness habits, and connect friends on a collaborative weekly XP leaderboard.
+
+---
+
+## 🪐 Core Capabilities & Features
+
+- **Empathetic AI Journaling**: Real-time evaluation of journal entries converting raw text reflections to numeric mood scores (1-100), dominant emotional drivers, sub-feelings checklist, wins celebrations, and actionable wellness challenges.
+- **Astronomic Gamification**: Relational transactions awarding `+100 XP` per entry, active level tiers progression, real-time writing streak flames, and badging objectives checklist.
+- **Social Connection**: Tabbed connection panel to request, accept, and manage peer lists alongside a dynamic relative leaderboard ranking.
+- **Offline Writes Synchronization**: Persistent local storage buffer using IndexedDB to cache journal entries locally if offline, automatically playing dynamic background syncing and throwing notifications upon connection recovery.
+- **Stunning Celestial Dark Theme**: A unified CSS design system incorporating high-blur backdrop glassmorphism, floating starry canvases, and dynamic color highlights shifting matching user emotions.
+
+---
+
+## 🚀 High-Performance PWA Strategy
+
+- **Zero-Polling Visit Updates**: Checks for new service worker builds automatically on load/refresh using `reg.update()` and performs a single clean controller reload. No battery-draining continuous polls.
+- **Stale-While-Revalidate Caching**: Standard caching configurations inside `/sw.js` for layout structures, static fonts, brand assets, and offlined routes.
+
+---
+
+## 📁 Public Site Architecture
+
+- `/`: Landing page outlining AuraQuest cosmic design, key features, and dynamic redirect gateways.
+- `/auth`: Sign-up and login portal.
+- `/dashboard`: Main authenticated dashboard displaying streaks, recent logs list, and average mood.
+- `/new-entry`: Writing console with word counter, IndexedDB buffer, and astronomy loader.
+- `/insights`: SVG gauge emotional dial displaying dominant feelings, summaries, celebrations, and actionable challenges.
+- `/social`: Leaderboards, incoming invites, and social search.
+- `/achievements`: Milestone objective showcases.
+
+---
+
+## 🗄️ Relational Schemas (PostgreSQL)
+
+- **users**: id, username, email, password_hash, xp, level, current_streak, longest_streak, last_journal_date, created_at
+- **entries**: id, user_id, content, created_at, updated_at
+- **ai_insights**: id, entry_id, mood_score, dominant_emotion, feelings_list (JSON), summary, celebration, improvement, created_at
+- **friendships**: id, user_id, friend_id, status (pending, accepted), created_at
+- **achievements**: id, user_id, badge_key, unlocked_at

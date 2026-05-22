@@ -4,10 +4,15 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
-import { getOfflineEntries } from '@/lib/offlineStore';
+import { 
+  getOfflineEntries, 
+  getCachedSyncedEntries, 
+  cacheSyncedEntries, 
+  deleteOfflineEntry 
+} from '@/lib/offlineStore';
 import { 
   Sparkles, Flame, Plus, ChevronRight, AlertCircle, 
-  Trash2, BrainCircuit, Heart, Calendar, Smile, RefreshCw
+  Trash2, BrainCircuit, Heart, Calendar, Smile, RefreshCw, WifiOff
 } from 'lucide-react';
 
 export default function Dashboard() {
@@ -15,10 +20,12 @@ export default function Dashboard() {
   const router = useRouter();
 
   const [entries, setEntries] = useState([]);
+  const [offlineEntries, setOfflineEntries] = useState([]);
   const [offlineCount, setOfflineCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [deletingId, setDeletingId] = useState(null);
+  const [isOnline, setIsOnline] = useState(true);
 
   // Authentication gate redirect
   useEffect(() => {
@@ -27,22 +34,58 @@ export default function Dashboard() {
     }
   }, [isAuthenticated, authLoading, router]);
 
+  // Safe online state detection
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      setIsOnline(navigator.onLine);
+      
+      const goOnline = () => {
+        setIsOnline(true);
+        fetchEntries();
+        checkOfflineStore();
+      };
+      const goOffline = () => setIsOnline(false);
+
+      window.addEventListener('online', goOnline);
+      window.addEventListener('offline', goOffline);
+
+      return () => {
+        window.removeEventListener('online', goOnline);
+        window.removeEventListener('offline', goOffline);
+      };
+    }
+  }, []);
+
   // Fetch entries
   const fetchEntries = async () => {
     if (!token) return;
+    setLoading(true);
     try {
+      if (typeof window !== 'undefined' && !navigator.onLine) {
+        throw new Error('Offline');
+      }
+
       const response = await fetch('/api/entries', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
         const data = await response.json();
         setEntries(data);
+        setError('');
+        // Cache the newly fetched entries
+        await cacheSyncedEntries(data);
       } else {
         setError('Could not retrieve entries from the stars.');
+        // Fallback to cache on error
+        const cached = await getCachedSyncedEntries();
+        setEntries(cached);
       }
     } catch (err) {
       console.error(err);
       setError('Running in celestial offline mode.');
+      // Load offline cache
+      const cached = await getCachedSyncedEntries();
+      setEntries(cached);
     } finally {
       setLoading(false);
     }
@@ -52,6 +95,7 @@ export default function Dashboard() {
   const checkOfflineStore = async () => {
     try {
       const offline = await getOfflineEntries();
+      setOfflineEntries(offline);
       setOfflineCount(offline.length);
     } catch (err) {
       console.error('Failed to access offline storage:', err);
@@ -67,8 +111,19 @@ export default function Dashboard() {
   }, [token, syncNotification]);
 
   // Handle delete
-  const handleDelete = async (id) => {
+  const handleDelete = async (id, isOffline, localId) => {
     if (!window.confirm("Are you sure you want to erase this memory from your quest?")) return;
+    
+    if (isOffline) {
+      try {
+        await deleteOfflineEntry(localId);
+        await checkOfflineStore();
+      } catch (err) {
+        console.error('Failed to delete offline entry:', err);
+      }
+      return;
+    }
+
     setDeletingId(id);
     try {
       const response = await fetch(`/api/entries/${id}`, {
@@ -76,7 +131,9 @@ export default function Dashboard() {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
-        setEntries(entries.filter(e => e.id !== id));
+        const updated = entries.filter(e => e.id !== id);
+        setEntries(updated);
+        await cacheSyncedEntries(updated);
         refreshUser();
       }
     } catch (error) {
@@ -89,6 +146,7 @@ export default function Dashboard() {
   // Helper to map mood score to glowing class
   const getMoodGlowClass = (score, emotion) => {
     const emo = (emotion || '').toLowerCase();
+    if (emo.includes('pending') || emo.includes('sync')) return 'glow-purple';
     if (emo.includes('joy') || emo.includes('happy') || score >= 80) return 'glow-joy';
     if (emo.includes('peace') || emo.includes('calm') || (score >= 60 && score < 80)) return 'glow-peace';
     if (emo.includes('sad') || score < 40) return 'glow-sadness';
@@ -99,6 +157,7 @@ export default function Dashboard() {
 
   const getMoodColor = (score, emotion) => {
     const emo = (emotion || '').toLowerCase();
+    if (emo.includes('pending') || emo.includes('sync')) return 'var(--glow-purple)';
     if (emo.includes('joy') || emo.includes('happy') || score >= 80) return 'var(--glow-gold)';
     if (emo.includes('peace') || emo.includes('calm') || (score >= 60 && score < 80)) return 'var(--glow-green)';
     if (emo.includes('sad') || score < 40) return 'var(--glow-blue)';
@@ -133,6 +192,20 @@ export default function Dashboard() {
   const weeklyStrokeDash = 2 * Math.PI * 50; // circumference for radius=50
   const weeklyStrokeOffset = weeklyStrokeDash - (weeklyStrokeDash * weeklyStats.avg) / 100;
 
+  // Merge local offline-only entries with server entries, sorted newest-first
+  const allEntries = [
+    ...offlineEntries.map(e => ({
+      ...e,
+      id: `offline-${e.id}`,
+      localId: e.id,
+      isOfflinePending: true,
+      mood_score: 0, // Placeholder score
+      dominant_emotion: 'Sync Pending',
+      feelings_list: ['Offline Buffer']
+    })),
+    ...entries
+  ].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
   if (authLoading || (!isAuthenticated && !token)) {
     return (
       <div style={{
@@ -161,8 +234,27 @@ export default function Dashboard() {
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px 40px 20px' }}>
       
+      {/* Dynamic Offline Warning Alert */}
+      {!isOnline && (
+        <div className="glass-panel glow-fear animate-pulse-slow" style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          padding: '16px 24px',
+          borderRadius: '16px',
+          marginBottom: '24px',
+          background: 'rgba(138, 43, 226, 0.08)',
+          border: '1px solid rgba(138, 43, 226, 0.25)'
+        }}>
+          <WifiOff size={20} color="var(--glow-purple)" style={{ flexShrink: 0 }} />
+          <span style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+            <strong>Celestial Link Offline (Airplane Mode)</strong>. You are writing in offline-first mode. All local journal entries are safe. They will sync automatically once your link to the stars is re-established.
+          </span>
+        </div>
+      )}
+
       {/* Offline entries notification banner */}
-      {offlineCount > 0 && (
+      {offlineCount > 0 && isOnline && (
         <div className="glass-panel glow-fear" style={{
           display: 'flex',
           alignItems: 'center',
@@ -292,7 +384,7 @@ export default function Dashboard() {
                 }} />
                 <p>Retrieving ancient memories...</p>
               </div>
-            ) : entries.length === 0 ? (
+            ) : allEntries.length === 0 ? (
               <div style={{
                 textAlign: 'center',
                 padding: '80px 20px',
@@ -311,7 +403,7 @@ export default function Dashboard() {
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {entries.map((entry) => {
+                {allEntries.map((entry) => {
                   const moodColor = getMoodColor(entry.mood_score, entry.dominant_emotion);
                   const glowClass = getMoodGlowClass(entry.mood_score, entry.dominant_emotion);
                   
@@ -337,7 +429,9 @@ export default function Dashboard() {
                             width: '42px',
                             height: '42px',
                             borderRadius: '50%',
-                            background: `rgba(${entry.mood_score >= 80 ? 'var(--mood-joy)' : entry.mood_score >= 60 ? 'var(--mood-peace)' : '0, 136, 255'}, 0.1)`,
+                            background: entry.isOfflinePending 
+                              ? 'rgba(138, 43, 226, 0.1)' 
+                              : `rgba(${entry.mood_score >= 80 ? 'var(--mood-joy)' : entry.mood_score >= 60 ? 'var(--mood-peace)' : '0, 136, 255'}, 0.1)`,
                             border: `2px solid ${moodColor}`,
                             display: 'flex',
                             alignItems: 'center',
@@ -346,11 +440,25 @@ export default function Dashboard() {
                             color: moodColor,
                             fontSize: '0.95rem'
                           }}>
-                            {entry.mood_score || '??'}
+                            {entry.isOfflinePending ? <WifiOff size={16} /> : (entry.mood_score || '??')}
                           </div>
                           <div>
                             <span style={{ fontSize: '0.95rem', fontWeight: 600, color: '#fff', display: 'flex', alignItems: 'center', gap: '6px' }}>
                               {entry.dominant_emotion || 'AI Processing'}
+                              {entry.isOfflinePending && (
+                                <span className="animate-pulse-slow" style={{
+                                  fontSize: '0.65rem',
+                                  color: 'var(--glow-purple)',
+                                  background: 'rgba(138, 43, 226, 0.15)',
+                                  border: '1px solid rgba(138, 43, 226, 0.3)',
+                                  padding: '2px 6px',
+                                  borderRadius: '6px',
+                                  fontWeight: 600,
+                                  textTransform: 'uppercase'
+                                }}>
+                                  Airplane Mode
+                                </span>
+                              )}
                             </span>
                             <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
                               <Calendar size={12} />
@@ -368,7 +476,7 @@ export default function Dashboard() {
                         {/* Expand & Delete Controls */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }} onClick={(e) => e.stopPropagation()}>
                           <button
-                            onClick={() => handleDelete(entry.id)}
+                            onClick={() => handleDelete(entry.id, entry.isOfflinePending, entry.localId)}
                             disabled={deletingId === entry.id}
                             style={{
                               background: 'none',

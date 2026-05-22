@@ -1,8 +1,9 @@
 // Offline store using Native IndexedDB for AuraQuest
 
 const DB_NAME = 'AuraQuestOfflineDB';
-const DB_VERSION = 1;
+const DB_VERSION = 2; // Incremented to support caching synced entries
 const STORE_NAME = 'offline_entries';
+const CACHE_STORE_NAME = 'synced_entries';
 
 // Initialize IndexedDB
 function openDB() {
@@ -26,6 +27,9 @@ function openDB() {
       const db = event.target.result;
       if (!db.objectStoreNames.contains(STORE_NAME)) {
         db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+      }
+      if (!db.objectStoreNames.contains(CACHE_STORE_NAME)) {
+        db.createObjectStore(CACHE_STORE_NAME, { keyPath: 'id' });
       }
     };
   });
@@ -105,6 +109,81 @@ export async function deleteOfflineEntry(id) {
     });
   } catch (error) {
     console.error('Failed to delete offline entry:', error);
+  }
+}
+
+// Cache successfully fetched entries
+export async function cacheSyncedEntries(entries) {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction([CACHE_STORE_NAME], 'readwrite');
+      const store = transaction.objectStore(CACHE_STORE_NAME);
+
+      const clearRequest = store.clear();
+
+      clearRequest.onsuccess = () => {
+        if (!entries || entries.length === 0) {
+          resolve();
+          return;
+        }
+
+        let completed = 0;
+        let hasError = false;
+
+        entries.forEach((entry) => {
+          const entryToCache = {
+            ...entry,
+            isOffline: false
+          };
+          const addRequest = store.add(entryToCache);
+
+          addRequest.onsuccess = () => {
+            completed++;
+            if (completed === entries.length && !hasError) {
+              console.log(`Cached ${entries.length} synced entries`);
+              resolve();
+            }
+          };
+
+          addRequest.onerror = (e) => {
+            hasError = true;
+            console.error('Error caching entry:', e.target.error);
+            reject(e.target.error);
+          };
+        });
+      };
+
+      clearRequest.onerror = (e) => {
+        console.error('Error clearing synced cache store:', e.target.error);
+        reject(e.target.error);
+      };
+    });
+  } catch (error) {
+    console.error('Failed to cache synced entries:', error);
+  }
+}
+
+// Fetch all cached synced entries from IndexedDB
+export async function getCachedSyncedEntries() {
+  try {
+    const db = await openDB();
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction([CACHE_STORE_NAME], 'readonly');
+      const store = transaction.objectStore(CACHE_STORE_NAME);
+      const request = store.getAll();
+
+      request.onsuccess = (event) => {
+        resolve(event.target.result || []);
+      };
+
+      request.onerror = (event) => {
+        reject(event.target.error);
+      };
+    });
+  } catch (error) {
+    console.error('Failed to get cached synced entries:', error);
+    return [];
   }
 }
 

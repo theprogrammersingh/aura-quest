@@ -4,8 +4,12 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { 
+  getOfflineEntries, 
+  getCachedSyncedEntries 
+} from '@/lib/offlineStore';
+import { 
   Sparkles, ArrowLeft, Heart, Award, Trophy, Compass,
-  BookOpen, Quote, Smile, ShieldCheck, Flame, Moon
+  BookOpen, Quote, Smile, ShieldCheck, Flame, Moon, WifiOff
 } from 'lucide-react';
 
 function InsightsContent() {
@@ -47,9 +51,44 @@ function InsightsContent() {
         setLoading(false);
         return;
       }
+
+      // Handle local-offline entries first
+      if (String(entryId).startsWith('offline-')) {
+        try {
+          const localId = parseInt(String(entryId).replace('offline-', ''), 10);
+          const offlineList = await getOfflineEntries();
+          const localEntry = offlineList.find(e => e.id === localId);
+          
+          if (localEntry) {
+            setEntryContent(localEntry.content);
+            setInsight({
+              isOfflinePending: true,
+              mood_score: 0,
+              dominant_emotion: 'Sync Pending',
+              feelings_list: ['Offline Buffer', 'Airplane Mode'],
+              summary: 'Your reflection is securely preserved in your local browser vault. As soon as your internet link to the stars is re-established, Gemini AI will analyze your dominant emotion, score your mood, and award your badges!',
+              celebration: 'You took care of yourself by journaling offline. Your active streak is protected!',
+              improvement: 'Enable your cellular network or connect to Wi-Fi to sync this entry and unlock detailed AI insights.'
+            });
+          } else {
+            setError('Could not locate this offline reflection.');
+          }
+        } catch (err) {
+          console.error(err);
+          setError('Failed to retrieve offline reflection.');
+        } finally {
+          setLoading(false);
+        }
+        return;
+      }
+
       if (!token) return;
 
       try {
+        if (typeof window !== 'undefined' && !navigator.onLine) {
+          throw new Error('Offline');
+        }
+
         const response = await fetch(`/api/entries/${entryId}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -66,17 +105,54 @@ function InsightsContent() {
             improvement: data.improvement
           });
         } else {
-          setError('Could not trace this memory in the stars.');
+          // If server failed, try to load from local cache as fallback
+          const cachedList = await getCachedSyncedEntries();
+          const cachedEntry = cachedList.find(e => String(e.id) === String(entryId));
+          if (cachedEntry) {
+            setEntryContent(cachedEntry.content);
+            setInsight({
+              mood_score: cachedEntry.mood_score,
+              dominant_emotion: cachedEntry.dominant_emotion,
+              feelings_list: cachedEntry.feelings_list,
+              summary: cachedEntry.summary,
+              celebration: cachedEntry.celebration,
+              improvement: cachedEntry.improvement,
+              isFromCache: true
+            });
+          } else {
+            setError('Could not trace this memory in the stars.');
+          }
         }
       } catch (err) {
         console.error(err);
-        setError('Star system offline. Could not load insights.');
+        // Load from local cache fallback
+        try {
+          const cachedList = await getCachedSyncedEntries();
+          const cachedEntry = cachedList.find(e => String(e.id) === String(entryId));
+          if (cachedEntry) {
+            setEntryContent(cachedEntry.content);
+            setInsight({
+              mood_score: cachedEntry.mood_score,
+              dominant_emotion: cachedEntry.dominant_emotion,
+              feelings_list: cachedEntry.feelings_list,
+              summary: cachedEntry.summary,
+              celebration: cachedEntry.celebration,
+              improvement: cachedEntry.improvement,
+              isFromCache: true
+            });
+          } else {
+            setError('Star system offline. Could not load insights.');
+          }
+        } catch (cacheErr) {
+          console.error(cacheErr);
+          setError('Star system offline. Could not load insights.');
+        }
       } finally {
         setLoading(false);
       }
     };
 
-    if (token) {
+    if (token || String(entryId).startsWith('offline-')) {
       fetchInsightDetails();
     }
   }, [entryId, token]);
@@ -112,6 +188,14 @@ function InsightsContent() {
   // Helper color map
   const getMoodColors = (score, emotion) => {
     const emo = (emotion || '').toLowerCase();
+    if (emo.includes('pending') || emo.includes('sync')) {
+      return { 
+        glowClass: 'glow-purple', 
+        primary: 'var(--glow-purple)', 
+        rgb: '138, 43, 226',
+        bg: 'rgba(138, 43, 226, 0.1)'
+      };
+    }
     if (emo.includes('joy') || emo.includes('happy') || score >= 80) {
       return { 
         glowClass: 'glow-joy', 
@@ -298,7 +382,12 @@ function InsightsContent() {
 
             {/* Circular Gauge SVG */}
             <div style={{ position: 'relative', width: '160px', height: '160px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '24px' }}>
-              <svg width="160" height="160" style={{ transform: 'rotate(-90deg)' }}>
+              <svg 
+                width="160" 
+                height="160" 
+                className={insight.isOfflinePending ? "animate-spin-slow" : ""} 
+                style={{ transform: insight.isOfflinePending ? 'none' : 'rotate(-90deg)', transformOrigin: 'center' }}
+              >
                 {/* Background track */}
                 <circle
                   cx="80"
@@ -316,8 +405,8 @@ function InsightsContent() {
                   fill="transparent"
                   stroke={moodColor}
                   strokeWidth="10"
-                  strokeDasharray={strokeCircumference}
-                  strokeDashoffset={strokeOffset}
+                  strokeDasharray={insight.isOfflinePending ? "8 6" : strokeCircumference}
+                  strokeDashoffset={insight.isOfflinePending ? 0 : strokeOffset}
                   strokeLinecap="round"
                   style={{
                     transition: 'stroke-dashoffset 0.1s linear',
@@ -333,12 +422,18 @@ function InsightsContent() {
                 flexDirection: 'column',
                 alignItems: 'center'
               }}>
-                <span style={{ fontSize: '2.5rem', fontWeight: 800, color: '#fff', fontFamily: 'var(--font-display)', lineHeight: 1 }}>
-                  {gaugeProgress}
-                </span>
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', marginTop: '2px' }}>
-                  Aura Score
-                </span>
+                {insight.isOfflinePending ? (
+                  <WifiOff size={40} style={{ color: moodColor, filter: `drop-shadow(0 0 8px ${moodColor})` }} />
+                ) : (
+                  <>
+                    <span style={{ fontSize: '2.5rem', fontWeight: 800, color: '#fff', fontFamily: 'var(--font-display)', lineHeight: 1 }}>
+                      {gaugeProgress}
+                    </span>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', marginTop: '2px' }}>
+                      Aura Score
+                    </span>
+                  </>
+                )}
               </div>
             </div>
 
